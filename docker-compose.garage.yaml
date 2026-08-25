@@ -2,14 +2,53 @@
 services:
   garage:
     container_name: ddev-${DDEV_SITENAME}-garage
-    image: ${GARAGE_DOCKER_IMAGE:-ddev/ddev-utilities:latest}
-    command: tail -f /dev/null
+    image: ${GARAGE_DOCKER_IMAGE:-dxflrs/garage:v2.3.0@sha256:866bd13ed2038ba7e7190e840482bc27234c4afaf77be8cfa439ae088c1e4690}
+    hostname: ${DDEV_SITENAME}-garage
+    entrypoint: ["/garage"]
+    command: ["server", "--single-node", "--default-bucket"]
     restart: "no"
-    # These labels ensure this service is discoverable by DDEV.
+    environment:
+      GARAGE_CONFIG_FILE: /etc/garage.toml
+      GARAGE_DEFAULT_ACCESS_KEY: ${GARAGE_DEFAULT_ACCESS_KEY:-GK0123456789abcdef0123456789abcdef}
+      GARAGE_DEFAULT_SECRET_KEY: ${GARAGE_DEFAULT_SECRET_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      GARAGE_DEFAULT_BUCKET: ${GARAGE_DEFAULT_BUCKET:-garage}
+      RUST_LOG: ${GARAGE_LOG_LEVEL:-garage=info}
+      VIRTUAL_HOST: $DDEV_HOSTNAME
+      HTTP_EXPOSE: "3900:3900,3902:3902"
+      HTTPS_EXPOSE: "3900:3900,3902:3902"
+    expose:
+      - "3900"
+      - "3901"
+      - "3902"
+      - "3903"
     labels:
       com.ddev.site-name: ${DDEV_SITENAME}
       com.ddev.approot: ${DDEV_APPROOT}
-
     volumes:
+      - "./garage/garage.toml:/etc/garage.toml:ro"
+      - "garage-metadata:/var/lib/garage/meta"
+      - "garage-data:/var/lib/garage/data"
       - ".:/mnt/ddev_config"
       - "ddev-global-cache:/mnt/ddev-global-cache"
+    healthcheck:
+      test: ["CMD", "/garage", "-c", "/etc/garage.toml", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    x-ddev:
+      describe-info: |
+        S3 API (internal): http://garage:3900
+        S3 API (host): ${DDEV_PRIMARY_URL}:3900
+        Default bucket: ${GARAGE_DEFAULT_BUCKET:-garage}
+        CLI: ddev garage status
+
+volumes:
+  garage-metadata:
+    name: ddev-${DDEV_SITENAME}-garage-metadata
+    labels:
+      com.ddev.site-name: ${DDEV_SITENAME}
+  garage-data:
+    name: ddev-${DDEV_SITENAME}-garage-data
+    labels:
+      com.ddev.site-name: ${DDEV_SITENAME}

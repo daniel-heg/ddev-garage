@@ -1,13 +1,27 @@
-[![add-on registry](https://img.shields.io/badge/DDEV-Add--on_Registry-blue)](https://addons.ddev.com)
 [![tests](https://github.com/daniel-heg/ddev-garage/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/daniel-heg/ddev-garage/actions/workflows/tests.yml?query=branch%3Amain)
-[![last commit](https://img.shields.io/github/last-commit/daniel-heg/ddev-garage)](https://github.com/daniel-heg/ddev-garage/commits)
 [![release](https://img.shields.io/github/v/release/daniel-heg/ddev-garage)](https://github.com/daniel-heg/ddev-garage/releases/latest)
 
 # DDEV Garage
 
-## Overview
+A private DDEV add-on for running a persistent, single-node
+[Garage](https://garagehq.deuxfleurs.fr/) S3-compatible object store in local development.
 
-This add-on integrates Garage into your [DDEV](https://ddev.com/) project.
+The add-on uses the official `dxflrs/garage` image. It creates a default access key and bucket,
+enables anonymous reads through Garage's website endpoint, and provides the Garage administration
+CLI as `ddev garage`. It does not include a separate Web UI.
+
+## Requirements
+
+- DDEV v1.25.2 or newer
+- Access to this private GitHub repository
+- A GitHub token with `contents:read` access, exposed as `DDEV_GITHUB_TOKEN`, `GH_TOKEN`, or
+  `GITHUB_TOKEN`
+
+When GitHub CLI is authenticated, the token can be supplied for the current shell with:
+
+```bash
+export DDEV_GITHUB_TOKEN="$(gh auth token)"
+```
 
 ## Installation
 
@@ -16,33 +30,95 @@ ddev add-on get daniel-heg/ddev-garage
 ddev restart
 ```
 
-After installation, make sure to commit the `.ddev` directory to version control.
+Commit the generated `.ddev` files to the consuming project's repository.
 
-## Usage
+## Endpoints and credentials
 
-| Command | Description |
-| ------- | ----------- |
-| `ddev describe` | View service status and used ports for Garage |
-| `ddev logs -s garage` | Check Garage logs |
+| Setting | Default |
+| --- | --- |
+| Internal S3 API | `http://garage:3900` |
+| Host S3 API | `https://<project>.ddev.site:3900` |
+| Public bucket URL | `https://garage.<project>.ddev.site:3902` |
+| Region | `garage` |
+| Bucket | `garage` |
+| Access key | `GK0123456789abcdef0123456789abcdef` |
+| Secret key | `0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef` |
 
-## Advanced Customization
+The credentials are deterministic and intended only for local development.
 
-To change the Docker image:
+Laravel/Flysystem can use:
+
+```dotenv
+AWS_ACCESS_KEY_ID=GK0123456789abcdef0123456789abcdef
+AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+AWS_DEFAULT_REGION=garage
+AWS_BUCKET=garage
+AWS_ENDPOINT=http://garage:3900
+AWS_USE_PATH_STYLE_ENDPOINT=true
+AWS_URL=https://garage.<project>.ddev.site:3902
+```
+
+`AWS_URL` deliberately has no bucket path. Garage's website endpoint identifies the bucket from the
+hostname and provides the anonymous reads that S3 bucket policies would normally provide.
+
+## Garage CLI
 
 ```bash
-ddev dotenv set .ddev/.env.garage --garage-docker-image="ddev/ddev-utilities:latest"
+ddev garage status
+ddev garage bucket list
+ddev garage bucket info garage
+ddev garage key list
+```
+
+## Configuration
+
+Defaults are stored in `.ddev/.env.garage`:
+
+| Variable | Default |
+| --- | --- |
+| `GARAGE_DOCKER_IMAGE` | `dxflrs/garage:v2.3.0` pinned by digest |
+| `GARAGE_DEFAULT_ACCESS_KEY` | Development access key shown above |
+| `GARAGE_DEFAULT_SECRET_KEY` | Development secret shown above |
+| `GARAGE_DEFAULT_BUCKET` | `garage` |
+| `GARAGE_DEFAULT_BUCKET_PUBLIC` | `true` |
+| `GARAGE_LOG_LEVEL` | `garage=info` |
+
+Set overrides before the first Garage start. A bucket-name change also changes the generated DDEV
+hostname, so reinstall the add-on after changing it:
+
+```bash
+ddev dotenv set .ddev/.env.garage --garage-default-bucket=assets
 ddev add-on get daniel-heg/ddev-garage
 ddev restart
 ```
 
-Make sure to commit the `.ddev/.env.garage` file to version control.
+Bucket names must be lowercase DNS labels between 3 and 63 characters. Set
+`GARAGE_DEFAULT_BUCKET_PUBLIC=false` to keep the default bucket private.
 
-All customization options (use with caution):
+## Persistence and removal
 
-| Variable | Flag | Default |
-| -------- | ---- | ------- |
-| `GARAGE_DOCKER_IMAGE` | `--garage-docker-image` | `ddev/ddev-utilities:latest` |
+Garage metadata and objects are stored in the named volumes
+`ddev-<project>-garage-metadata` and `ddev-<project>-garage-data`. They survive `ddev restart` and
+add-on removal.
+
+```bash
+ddev add-on remove garage
+ddev restart
+```
+
+Use `ddev delete -O` only when the project's Garage objects may also be discarded.
+
+## Development
+
+Run the directory-install tests from the add-on root:
+
+```bash
+bats ./tests/test.bats --filter-tags '!release'
+```
+
+The GitHub Actions workflow tests DDEV stable and HEAD. The Garage image is pinned to its verified
+multi-platform digest and supports both amd64 and arm64.
 
 ## Credits
 
-**Contributed and maintained by [@daniel-heg](https://github.com/daniel-heg)**
+Contributed and maintained by [@daniel-heg](https://github.com/daniel-heg).

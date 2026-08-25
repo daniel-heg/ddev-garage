@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+#ddev-generated
+## Description: Run the Garage administration CLI
+## Usage: garage [arguments]
+## Example: "ddev garage status" or "ddev garage bucket list"
+
+set -euo pipefail
+
+ddev_command="${DDEV_EXECUTABLE:-ddev}"
+exec "${ddev_command}" exec --quiet --service garage --raw -- \
+  /garage -c /etc/garage.toml "$@"

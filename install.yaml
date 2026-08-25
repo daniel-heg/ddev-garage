@@ -1,6 +1,58 @@
 name: garage
 
 project_files:
+  - .env.garage
   - docker-compose.garage.yaml
+  - config.garage.yaml.template
+  - garage/garage.toml.template
+  - garage/ensure-public-bucket
+  - commands/host/garage
 
-ddev_version_constraint: '>= v1.24.10'
+global_files: []
+
+ddev_version_constraint: ">= v1.25.2"
+
+post_install_actions:
+  - |
+    #ddev-description:Generate project-specific Garage configuration
+    set -eu
+
+    ddev_command="${DDEV_EXECUTABLE:-ddev}"
+    bucket="$(${ddev_command} dotenv get .ddev/.env.garage --garage-default-bucket)"
+
+    if ! printf '%s' "${bucket}" | grep -Eq '^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$'; then
+      echo "GARAGE_DEFAULT_BUCKET must be a 3-63 character lowercase DNS label." >&2
+      exit 1
+    fi
+
+    sed "s|__GARAGE_ROOT_DOMAIN__|.${DDEV_SITENAME}.${DDEV_TLD}|g" \
+      "${DDEV_APPROOT}/.ddev/garage/garage.toml.template" \
+      > "${DDEV_APPROOT}/.ddev/garage/garage.toml"
+
+    sed "s|__GARAGE_PUBLIC_HOSTNAME__|${bucket}.${DDEV_SITENAME}|g" \
+      "${DDEV_APPROOT}/.ddev/config.garage.yaml.template" \
+      > "${DDEV_APPROOT}/.ddev/config.garage.yaml"
+
+    chmod +x \
+      "${DDEV_APPROOT}/.ddev/commands/host/garage" \
+      "${DDEV_APPROOT}/.ddev/garage/ensure-public-bucket"
+
+removal_actions:
+  - |
+    #ddev-description:Remove generated Garage runtime configuration
+    for file in \
+      "${DDEV_APPROOT}/.ddev/config.garage.yaml" \
+      "${DDEV_APPROOT}/.ddev/garage/garage.toml"
+    do
+      if [ ! -f "${file}" ]; then
+        continue
+      fi
+
+      if grep -q '#ddev-generated' "${file}"; then
+        rm -f "${file}"
+      else
+        echo "Preserving modified file: ${file}"
+      fi
+    done
+
+    rmdir "${DDEV_APPROOT}/.ddev/garage" 2>/dev/null || true
