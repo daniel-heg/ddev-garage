@@ -1,7 +1,6 @@
 name: garage
 
 project_files:
-  - .env.garage
   - docker-compose.garage.yaml
   - config.garage.yaml.template
   - garage/garage.toml.template
@@ -17,8 +16,7 @@ post_install_actions:
     #ddev-description:Generate project-specific Garage configuration
     set -eu
 
-    ddev_command="${DDEV_EXECUTABLE:-ddev}"
-    bucket="$(${ddev_command} dotenv get .ddev/.env.garage --garage-default-bucket)"
+    bucket="${GARAGE_DEFAULT_BUCKET:-garage}"
 
     if ! printf '%s' "${bucket}" | grep -Eq '^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$'; then
       echo "GARAGE_DEFAULT_BUCKET must be a 3-63 character lowercase DNS label." >&2

@@ -72,7 +72,7 @@ ddev garage key list
 
 ## Configuration
 
-Defaults are stored in `.ddev/.env.garage`:
+The add-on uses these defaults when `.ddev/.env.garage` is absent:
 
 | Variable | Default |
 | --- | --- |
@@ -83,8 +83,9 @@ Defaults are stored in `.ddev/.env.garage`:
 | `GARAGE_DEFAULT_BUCKET_PUBLIC` | `true` |
 | `GARAGE_LOG_LEVEL` | `garage=info` |
 
-Set overrides before the first Garage start. A bucket-name change also changes the generated DDEV
-hostname, so reinstall the add-on after changing it:
+Create the user-managed `.ddev/.env.garage` with `ddev dotenv set` to override a value. The add-on
+does not overwrite this file during installation or upgrades. A bucket-name change also changes the
+generated DDEV hostname, so reinstall the add-on after changing it:
 
 ```bash
 ddev dotenv set .ddev/.env.garage --garage-default-bucket=assets

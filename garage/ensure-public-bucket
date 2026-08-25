@@ -4,13 +4,18 @@
 set -euo pipefail
 
 ddev_command="${DDEV_EXECUTABLE:-ddev}"
-public="$(${ddev_command} dotenv get .ddev/.env.garage --garage-default-bucket-public)"
+public="${GARAGE_DEFAULT_BUCKET_PUBLIC:-true}"
+bucket="${GARAGE_DEFAULT_BUCKET:-garage}"
+env_file="${DDEV_APPROOT}/.ddev/.env.garage"
+
+if [ -f "${env_file}" ]; then
+  public="$(${ddev_command} dotenv get .ddev/.env.garage --garage-default-bucket-public)"
+  bucket="$(${ddev_command} dotenv get .ddev/.env.garage --garage-default-bucket)"
+fi
 
 if [ "${public}" != "true" ]; then
   exit 0
 fi
-
-bucket="$(${ddev_command} dotenv get .ddev/.env.garage --garage-default-bucket)"
 
 for attempt in $(seq 1 30); do
   if "${ddev_command}" exec --quiet --service garage --raw -- \
