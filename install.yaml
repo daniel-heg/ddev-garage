@@ -2,8 +2,6 @@ name: garage
 
 project_files:
   - docker-compose.garage.yaml
-  - config.garage.yaml.template
-  - garage/garage.toml.template
   - garage/ensure-public-bucket
   - commands/host/garage
 
@@ -23,13 +21,49 @@ post_install_actions:
       exit 1
     fi
 
-    sed "s|__GARAGE_ROOT_DOMAIN__|.${DDEV_SITENAME}.${DDEV_TLD}|g" \
-      "${DDEV_APPROOT}/.ddev/garage/garage.toml.template" \
-      > "${DDEV_APPROOT}/.ddev/garage/garage.toml"
-
-    sed "s|__GARAGE_PUBLIC_HOSTNAME__|${bucket}.${DDEV_SITENAME}|g" \
+    for template in \
       "${DDEV_APPROOT}/.ddev/config.garage.yaml.template" \
-      > "${DDEV_APPROOT}/.ddev/config.garage.yaml"
+      "${DDEV_APPROOT}/.ddev/garage/garage.toml.template"
+    do
+      if [ -f "${template}" ] && grep -q '#ddev-generated' "${template}"; then
+        rm -f "${template}"
+      fi
+    done
+
+    cat > "${DDEV_APPROOT}/.ddev/garage/garage.toml" <<EOF
+    #ddev-generated
+    metadata_dir = "/var/lib/garage/meta"
+    data_dir = "/var/lib/garage/data"
+    db_engine = "sqlite"
+    replication_factor = 1
+
+    rpc_bind_addr = "[::]:3901"
+    rpc_public_addr = "garage:3901"
+    rpc_secret = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+
+    [s3_api]
+    api_bind_addr = "[::]:3900"
+    s3_region = "garage"
+    root_domain = ".${DDEV_SITENAME}.${DDEV_TLD}"
+
+    [s3_web]
+    bind_addr = "[::]:3902"
+    root_domain = ".${DDEV_SITENAME}.${DDEV_TLD}"
+
+    [admin]
+    api_bind_addr = "[::]:3903"
+    EOF
+
+    cat > "${DDEV_APPROOT}/.ddev/config.garage.yaml" <<EOF
+    #ddev-generated
+    #ddev-silent-no-warn
+    additional_hostnames:
+      - ${bucket}.${DDEV_SITENAME}
+
+    hooks:
+      post-start:
+        - exec-host: bash "\${DDEV_APPROOT}/.ddev/garage/ensure-public-bucket"
+    EOF
 
     chmod +x \
       "${DDEV_APPROOT}/.ddev/commands/host/garage" \
@@ -40,7 +74,9 @@ removal_actions:
     #ddev-description:Remove generated Garage runtime configuration
     for file in \
       "${DDEV_APPROOT}/.ddev/config.garage.yaml" \
-      "${DDEV_APPROOT}/.ddev/garage/garage.toml"
+      "${DDEV_APPROOT}/.ddev/garage/garage.toml" \
+      "${DDEV_APPROOT}/.ddev/config.garage.yaml.template" \
+      "${DDEV_APPROOT}/.ddev/garage/garage.toml.template"
     do
       if [ ! -f "${file}" ]; then
         continue

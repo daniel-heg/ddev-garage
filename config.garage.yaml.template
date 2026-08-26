@@ -1,8 +1,0 @@
-#ddev-generated
-#ddev-silent-no-warn
-additional_hostnames:
-  - __GARAGE_PUBLIC_HOSTNAME__
-
-hooks:
-  post-start:
-    - exec-host: bash "${DDEV_APPROOT}/.ddev/garage/ensure-public-bucket"

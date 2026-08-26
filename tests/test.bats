@@ -34,6 +34,9 @@ install_from_directory() {
   run ddev add-on get "${DIR}"
   assert_success
 
+  [ ! -e .ddev/config.garage.yaml.template ]
+  [ ! -e .ddev/garage/garage.toml.template ]
+
   run ddev restart -y
   assert_success
 }
