@@ -4,8 +4,8 @@ setup() {
   set -eu -o pipefail
 
   export GITHUB_REPO=daniel-heg/ddev-garage
-  export GARAGE_ACCESS_KEY=GK0123456789abcdef0123456789abcdef
-  export GARAGE_SECRET_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+  export GARAGE_ACCESS_KEY=garage-access-key
+  export GARAGE_SECRET_KEY=garage-secret-key
 
   TEST_BREW_PREFIX="$(brew --prefix 2>/dev/null || true)"
   export BATS_LIB_PATH="${BATS_LIB_PATH}:${TEST_BREW_PREFIX}/lib:/usr/lib/bats"

@@ -41,16 +41,16 @@ Commit the generated `.ddev` files to the consuming project's repository.
 | Public bucket URL | `https://garage.<project>.ddev.site:3902` |
 | Region | `garage` |
 | Bucket | `garage` |
-| Access key | `GK0123456789abcdef0123456789abcdef` |
-| Secret key | `0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef` |
+| Access key | `garage-access-key` |
+| Secret key | `garage-secret-key` |
 
 The credentials are deterministic and intended only for local development.
 
 Laravel/Flysystem can use:
 
 ```dotenv
-AWS_ACCESS_KEY_ID=GK0123456789abcdef0123456789abcdef
-AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+AWS_ACCESS_KEY_ID=garage-access-key
+AWS_SECRET_ACCESS_KEY=garage-secret-key
 AWS_DEFAULT_REGION=garage
 AWS_BUCKET=garage
 AWS_ENDPOINT=http://garage:3900
