@@ -3,7 +3,7 @@
 
 # DDEV Garage
 
-A private DDEV add-on for running a persistent, single-node
+A DDEV add-on for running a persistent, single-node
 [Garage](https://garagehq.deuxfleurs.fr/) S3-compatible object store in local development.
 
 The add-on uses the official `dxflrs/garage` image. It creates a default access key and bucket,
@@ -13,15 +13,6 @@ CLI as `ddev garage`. It does not include a separate Web UI.
 ## Requirements
 
 - DDEV v1.25.2 or newer
-- Access to this private GitHub repository
-- A GitHub token with `contents:read` access, exposed as `DDEV_GITHUB_TOKEN`, `GH_TOKEN`, or
-  `GITHUB_TOKEN`
-
-When GitHub CLI is authenticated, the token can be supplied for the current shell with:
-
-```bash
-export DDEV_GITHUB_TOKEN="$(gh auth token)"
-```
 
 ## Installation
 
